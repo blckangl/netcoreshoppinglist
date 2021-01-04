@@ -28,6 +28,7 @@ namespace shoppinglist
         {
             services.AddControllers();
             services.AddSingleton<DataService>();
+            services.AddDbContext<ShoppingListContext>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
