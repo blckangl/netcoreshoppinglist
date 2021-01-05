@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using shoppinglist.Models;
 using shoppinglist.Service;
@@ -89,6 +90,9 @@ namespace shoppinglist.Controllers
 
 
         }
+
+
+        [Authorize]
         [HttpGet]
         public IActionResult GetAllItems()
         {

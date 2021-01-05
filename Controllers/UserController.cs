@@ -1,28 +1,35 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using shoppinglist.Models;
 using shoppinglist.Service;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace shoppinglist.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/users")]
     [ApiController]
     public class UserController : ControllerBase
     {
-        DataService dataService;
-        ShoppingListContext _context;
+        private readonly ShoppingListContext _context;
+        private readonly IConfiguration _config;
 
-        public UserController(DataService ds,ShoppingListContext context)
+        public UserController(ShoppingListContext context,IConfiguration config)
         {
-            dataService = ds;
             _context = context;
+            _config = config;
 
         }
 
+        [Authorize]
         [HttpGet()]
         public IActionResult getUsers()
         {
@@ -112,6 +119,51 @@ namespace shoppinglist.Controllers
 
             return null;
 
+        }
+
+
+        [HttpPost("login")]
+        [AllowAnonymous]
+        public IActionResult Login([FromBody] User login)
+        {
+            IActionResult response = Unauthorized();
+            Person user = AuthenticateUser(login);
+            if (user != null)
+            {
+                var tokenString = GenerateJWTToken(user);
+                response = Ok(new
+                {
+                    token = tokenString,
+                    userDetails = user,
+                });
+            }
+            return response;
+        }
+
+        Person AuthenticateUser(User loginCredentials)
+        {
+            Person user = _context.persons.SingleOrDefault(x => x.UserName == loginCredentials.UserName && x.Password == loginCredentials.Password);
+            return user;
+        }
+
+        string GenerateJWTToken(Person userInfo)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("Jwt")["SecretKey"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, userInfo.UserName),
+                new Claim("Nom", userInfo.Name.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+               };
+            var token = new JwtSecurityToken(
+            issuer: _config.GetSection("Jwt")["Issuer"],
+            audience: _config.GetSection("Jwt")["Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddMinutes(30),
+            signingCredentials: credentials
+            );
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

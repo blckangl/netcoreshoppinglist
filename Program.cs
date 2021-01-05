@@ -30,7 +30,8 @@ namespace shoppinglist
             using (var context = new ShoppingListContext())
             {
                 context.Database.EnsureCreated();
-                //var person1 = new Person() { Name = "ali", Age = 20 };
+                //var person1 = new Person() { Name = "ali", Age = 20,Password="123456",UserName="user1" };
+                //var person2 = new Person() { Name = "med", Age = 20,Password="123456",UserName="user2" };
 
                 //context.persons.Add(person1);
                 //context.SaveChanges();
